@@ -1,29 +1,13 @@
 package Personagens;
 
-public class Barbaro {
-    private String nome;
-    private int vida;
-    private int vidaMaxima;
-    private int ataque;
-    private int defesa;
-    private int fureor; // Exemplo de atributo único
-
+public class Barbaro extends Personagem {
     public Barbaro() {
-        this.nome = "Bárbaro";
-        this.vidaMaxima = 150;
-        this.vida = 150;
-        this.ataque = 20;
-        this.defesa = 15;
+        super("Bárbaro", 150, 20, 10, 0.05);
     }
 
-    public void atacar() {
-        // Lógica de ataque corpo a corpo pesado
+    @Override
+    public int calcularDanoEspecial() {
+        // Fúria selvagem (1.3x de dano)
+        return (int) (this.ataque * 1.3);
     }
-
-    // Getters e Setters
-    public String getNome() { return nome; }
-    public int getVida() { return vida; }
-    public void setVida(int vida) { this.vida = Math.max(0, Math.min(vida, vidaMaxima)); }
-    public int getAtaque() { return ataque; }
-    public int getDefesa() { return defesa; }
 }

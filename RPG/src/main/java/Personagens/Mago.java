@@ -1,32 +1,13 @@
 package Personagens;
 
-public class Mago {
-    private String nome;
-    private int vida;
-    private int vidaMaxima;
-    private int ataque;
-    private int defesa;
-    private int mana;
-
+public class Mago extends Personagem {
     public Mago() {
-        this.nome = "Mago";
-        this.vidaMaxima = 80;
-        this.vida = 80;
-        this.ataque = 5;
-        this.defesa = 5;
-        this.mana = 100;
+        super("Mago", 85, 14, 5, 0.15);
     }
 
-    public void atacar() {
-        // Lógica de ataque ou magia do Mago para o JavaFX
+    @Override
+    public int calcularDanoEspecial() {
+        // Bola de fogo poderosa (2.0x de dano)
+        return (int) (this.ataque * 2.0);
     }
-
-    // Getters e Setters
-    public String getNome() { return nome; }
-    public int getVida() { return vida; }
-    public void setVida(int vida) { this.vida = Math.max(0, Math.min(vida, vidaMaxima)); }
-    public int getAtaque() { return ataque; }
-    public int getDefesa() { return defesa; }
-    public int getMana() { return mana; }
-    public void setMana(int mana) { this.mana = Math.max(0, Math.min(mana, 100)); }
 }

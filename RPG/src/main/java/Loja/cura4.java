@@ -1,34 +1,17 @@
 package Loja;
 
 public class cura4 {
-    private String nome;
-    private int preco;
-    private int cura;
-    private boolean removeStatus; // remove queimadura e veneno
-    private String descricao;
+    private String nome = "Elixir Supremo";
+    private int preco = 35;
+    private String descricao = "Recupera 100% do HP e limpa todos os status";
+    private boolean removeStatus = true;
 
-    public cura4() {
-        this.nome = "Elixir Supremo";
-        this.preco = 120;
-        this.cura = 250;
-        this.removeStatus = true;
-        this.descricao = "Restaura 250 HP e remove queimadura e veneno.";
+    public int curar(int vidaAtual, int vidaMax) {
+        return vidaMax;
     }
 
-    // Retorna a nova vida do jogador após usar a poção (nunca passa da vida máxima)
-    public int curar(int vidaAtual, int vidaMaxima) {
-        return Math.min(vidaMaxima, vidaAtual + cura);
-    }
-
-    // Getters
     public String getNome() { return nome; }
     public int getPreco() { return preco; }
-    public int getCura() { return cura; }
-    public boolean isRemoveStatus() { return removeStatus; }
     public String getDescricao() { return descricao; }
-
-    @Override
-    public String toString() {
-        return nome + " - Cura: " + cura + " HP | Preço: " + preco + " moedas";
-    }
+    public boolean isRemoveStatus() { return removeStatus; }
 }

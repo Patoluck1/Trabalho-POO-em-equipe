@@ -1,26 +1,12 @@
 package Inimigos;
 
-public class Ciclope {
-    private String nome;
-    private int vida;
-    private int ataque;
-    private int defesa;
-
+public class Ciclope extends Inimigo {
     public Ciclope() {
-        this.nome = "Ciclope";
-        this.vida = 180;
-        this.ataque = 35;
-        this.defesa = 10;
+        super("Ciclope", 180, 20, 10, 0);
     }
 
-    public void acaoEspecial() {
-        // Ataque esmagador com dano bruto
+    @Override
+    public String acaoEspecial() {
+        return "nenhum";
     }
-
-    // Getters e Setters
-    public String getNome() { return nome; }
-    public int getVida() { return vida; }
-    public void setVida(int vida) { this.vida = Math.max(0, vida); }
-    public int getAtaque() { return ataque; }
-    public int getDefesa() { return defesa; }
 }

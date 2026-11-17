@@ -1,27 +1,8 @@
 package pr_pucpr.rpg;
 
-import Inimigos.Aranha;
-import Inimigos.Ciclope;
-import Inimigos.Esqueleto;
-import Inimigos.Goblin;
-import Inimigos.SenhorBatata;
-import Personagens.Arqueiro;
-import Personagens.Barbaro;
-import Personagens.Ladino;
-import Personagens.Mago;
-import Loja.cura1;
-import Loja.cura2;
-import Loja.cura3;
-import Loja.cura4;
-import Loja.Arma1;
-import Loja.Arma2;
-import Loja.Arma3;
-import Loja.Arma4;
-import Loja.Armadura1;
-import Loja.Armadura2;
-import Loja.Armadura3;
-import Loja.Armadura4;
-import Loja.batata;
+import Inimigos.*;
+import Personagens.*;
+import Loja.*;
 
 import javafx.application.Application;
 import javafx.geometry.Insets;
@@ -33,8 +14,10 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.Random;
 
 public class Main extends Application {
@@ -42,58 +25,37 @@ public class Main extends Application {
     private Stage primaryStage;
     private Scene sceneSelecao, sceneMenu, sceneExploracao, sceneCombate, sceneLoja;
 
-    // Estilos CSS Reutilizáveis
     private final String ESTILO_BOTAO =
-            "-fx-background-color: #2c3e50; " +
-                    "-fx-text-fill: white; " +
-                    "-fx-font-size: 14px; " +
-                    "-fx-font-weight: bold; " +
-                    "-fx-padding: 10px 20px; " +
-                    "-fx-background-radius: 8px;";
+            "-fx-background-color: #2c3e50; -fx-text-fill: white; -fx-font-size: 14px; " +
+                    "-fx-font-weight: bold; -fx-padding: 10px 20px; -fx-background-radius: 8px;";
 
     private final String ESTILO_BOTAO_DESTAQUE =
-            "-fx-background-color: #e74c3c; " +
-                    "-fx-text-fill: white; " +
-                    "-fx-font-size: 14px; " +
-                    "-fx-font-weight: bold; " +
-                    "-fx-padding: 10px 20px; " +
-                    "-fx-background-radius: 8px;";
+            "-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 14px; " +
+                    "-fx-font-weight: bold; -fx-padding: 10px 20px; -fx-background-radius: 8px;";
 
     private final String ESTILO_FUNDO =
-            "-fx-background-color: #1e1e2f; " +
-                    "-fx-alignment: center;";
+            "-fx-background-color: #1e1e2f; -fx-alignment: center;";
 
     // ==========================================
-    // ATRIBUTOS DO JOGADOR
+    // POLIMORFISMO: OBJETO DO HERÓI ATUAL
     // ==========================================
-    private String nomePersonagem;
-    private int vidaJogador;
-    private int vidaMaxJogador;
-    private int ataqueJogador;
-    private int defesaJogador;
-    private double chanceDesvioJogador;
+    private Personagem heroiAtual;
 
     private boolean estaQueimando = false;
     private boolean estaEnvenenado = false;
     private boolean estaLento = false;
 
-    // ==========================================
-    // ATRIBUTOS DO INIMIGO
-    // ==========================================
-    private String tipoInimigoStr;
-    private String nomeInimigo;
-    private int vidaInimigo;
-    private int ataqueInimigo;
-    private int defesaInimigo;
-    private double chanceDesvioInimigo;
+    // Polimorfismo & Coleção de Objetos
+    private Inimigo inimigoAtual;
+    private SenhorBatata chefeSecretoAtual;
+    private boolean enfrentandoChefe = false;
+    private List<Equipavel> equipamentosAdquiridos = new ArrayList<>();
 
-    private Label lblStatusCombate;
+    private Label lblStatusCombate, lblStatusMenu;
     private Button btnBater, btnMagia, btnUsarItens, btnFugir, btnIrParaMenu;
     private Random random = new Random();
 
-    // ==========================================
-    // LOJA / INVENTÁRIO
-    // ==========================================
+    // Loja / Inventário (classes dos colegas intactas)
     private int moedas = 50;
     private cura1 pocao1 = new cura1();
     private cura2 pocao2 = new cura2();
@@ -122,7 +84,7 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
-        primaryStage.setTitle("RPG de Turno - JavaFX");
+        primaryStage.setTitle("RPG de Turno - JavaFX (POO)");
 
         criarTelaSelecaoPersonagem();
         criarMenuPrincipal();
@@ -145,58 +107,82 @@ public class Main extends Application {
         Label titulo = new Label("=== ESCOLHA SEU HERÓI ===");
         titulo.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #f1c40f;");
 
-        Button btnLadino = criarBotaoEstilizado("Ladino (Melhor Desvio, Críticos)", ESTILO_BOTAO);
+        Label lblAvisoLoad = new Label();
+        lblAvisoLoad.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+
+        Button btnLadino = criarBotaoEstilizado("Ladino (Melhor Desvio, Ataque Furtivo)", ESTILO_BOTAO);
         btnLadino.setOnAction(e -> {
-            Ladino l = new Ladino();
-            definirHeroi(l.getNome(), l.getVida(), l.getAtaque(), l.getDefesa(), 0.35);
+            heroiAtual = new Ladino();
             primaryStage.setScene(sceneMenu);
         });
 
-        Button btnArqueiro = criarBotaoEstilizado("Arqueiro (Bom Desvio, Equilibrado)", ESTILO_BOTAO);
+        Button btnArqueiro = criarBotaoEstilizado("Arqueiro (Bom Desvio, Flecha Perfurante)", ESTILO_BOTAO);
         btnArqueiro.setOnAction(e -> {
-            Arqueiro a = new Arqueiro();
-            definirHeroi(a.getNome(), a.getVida(), a.getAtaque(), a.getDefesa(), 0.25);
+            heroiAtual = new Arqueiro();
             primaryStage.setScene(sceneMenu);
         });
 
-        Button btnMago = criarBotaoEstilizado("Mago (Desvio Baixo, Magia Forte)", ESTILO_BOTAO);
+        Button btnMago = criarBotaoEstilizado("Mago (Desvio Baixo, Bola de Fogo)", ESTILO_BOTAO);
         btnMago.setOnAction(e -> {
-            Mago m = new Mago();
-            definirHeroi(m.getNome(), m.getVida(), m.getAtaque(), m.getDefesa(), 0.15);
+            heroiAtual = new Mago();
             primaryStage.setScene(sceneMenu);
         });
 
-        Button btnBarbaro = criarBotaoEstilizado("Bárbaro (Pior Desvio, Muita Vida)", ESTILO_BOTAO);
+        Button btnBarbaro = criarBotaoEstilizado("Bárbaro (Pior Desvio, Fúria Selvagem)", ESTILO_BOTAO);
         btnBarbaro.setOnAction(e -> {
-            Barbaro b = new Barbaro();
-            definirHeroi(b.getNome(), b.getVida(), b.getAtaque(), b.getDefesa(), 0.05);
+            heroiAtual = new Barbaro();
             primaryStage.setScene(sceneMenu);
         });
 
-        layout.getChildren().addAll(titulo, btnLadino, btnArqueiro, btnMago, btnBarbaro);
-        sceneSelecao = new Scene(layout, 650, 500);
+        Button btnCarregar = criarBotaoEstilizado("Carregar Jogo Salvo", ESTILO_BOTAO_DESTAQUE);
+        btnCarregar.setOnAction(e -> {
+            try {
+                Properties p = GerenciadorSave.carregarJogo();
+                String classeSalva = p.getProperty("classe");
+
+                if (classeSalva.equalsIgnoreCase("Ladino")) heroiAtual = new Ladino();
+                else if (classeSalva.equalsIgnoreCase("Arqueiro")) heroiAtual = new Arqueiro();
+                else if (classeSalva.equalsIgnoreCase("Mago")) heroiAtual = new Mago();
+                else heroiAtual = new Barbaro();
+
+                // Restaura os bônus de ataque e defesa acumulados
+                int atqSalvo = Integer.parseInt(p.getProperty("ataque"));
+                int defSalva = Integer.parseInt(p.getProperty("defesa"));
+                if (atqSalvo > heroiAtual.getAtaque()) {
+                    heroiAtual.aumentarAtaque(atqSalvo - heroiAtual.getAtaque());
+                }
+                if (defSalva > heroiAtual.getDefesa()) {
+                    heroiAtual.aumentarDefesa(defSalva - heroiAtual.getDefesa());
+                }
+
+                heroiAtual.setVida(Integer.parseInt(p.getProperty("vida")));
+                this.moedas = Integer.parseInt(p.getProperty("moedas"));
+                this.qtdCura1 = Integer.parseInt(p.getProperty("c1"));
+                this.qtdCura2 = Integer.parseInt(p.getProperty("c2"));
+                this.qtdCura3 = Integer.parseInt(p.getProperty("c3"));
+                this.qtdCura4 = Integer.parseInt(p.getProperty("c4"));
+                this.armaEquipada = p.getProperty("arma");
+                this.armaduraEquipada = p.getProperty("armadura");
+
+                lblStatusMenu.setText("Progresso carregado com sucesso!");
+                primaryStage.setScene(sceneMenu);
+            } catch (IOException | NumberFormatException ex) {
+                lblAvisoLoad.setText("Erro ao carregar: " + ex.getMessage());
+            }
+        });
+
+        layout.getChildren().addAll(titulo, btnLadino, btnArqueiro, btnMago, btnBarbaro, btnCarregar, lblAvisoLoad);
+        sceneSelecao = new Scene(layout, 650, 540);
     }
 
-    private void definirHeroi(String nome, int vida, int ataque, int defesa, double desvio) {
-        this.nomePersonagem = nome;
-        this.vidaMaxJogador = vida;
-        this.vidaJogador = vida;
-        this.ataqueJogador = ataque;
-        this.defesaJogador = defesa;
-        this.chanceDesvioJogador = desvio;
-    }
-
-    // Reinicia completamente o progresso ao morrer
     private void resetarJogoCompleto() {
+        heroiAtual = null;
         moedas = 50;
-        qtdCura1 = 0;
-        qtdCura2 = 0;
-        qtdCura3 = 0;
-        qtdCura4 = 0;
+        qtdCura1 = 0; qtdCura2 = 0; qtdCura3 = 0; qtdCura4 = 0;
         armaEquipada = "Nenhuma";
         armaduraEquipada = "Nenhuma";
+        equipamentosAdquiridos.clear();
 
-        // Reseta disponibilidade das armas e armaduras na loja
         armaArqueiro.setDisponivel(true);
         armaBarbaro.setDisponivel(true);
         armaLadino.setDisponivel(true);
@@ -207,13 +193,13 @@ public class Main extends Application {
         armaduraLadino.setDisponivel(true);
         armaduraMago.setDisponivel(true);
 
-        // Reseta o item batata
-        // (Caso a classe batata tenha método para resetar, garante que volta a ficar disponível)
         if (itemBatata.isNoInventario() || !itemBatata.isDisponivel()) {
             itemBatata = new batata();
         }
 
-        resetarStatusEfeitos();
+        estaQueimando = false;
+        estaEnvenenado = false;
+        estaLento = false;
         primaryStage.setScene(sceneSelecao);
     }
 
@@ -228,20 +214,43 @@ public class Main extends Application {
         Label titulo = new Label("=== RPG DE TURNO ===");
         titulo.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #f1c40f;");
 
+        lblStatusMenu = new Label();
+        lblStatusMenu.setStyle("-fx-text-fill: #2ecc71; -fx-font-weight: bold;");
+
         Button btnExplorar = criarBotaoEstilizado("Explorar (Batalhar)", ESTILO_BOTAO_DESTAQUE);
         btnExplorar.setPrefWidth(240);
-        btnExplorar.setOnAction(e -> primaryStage.setScene(sceneExploracao));
+        btnExplorar.setOnAction(e -> {
+            lblStatusMenu.setText("");
+            primaryStage.setScene(sceneExploracao);
+        });
 
         Button btnLoja = criarBotaoEstilizado("Loja", ESTILO_BOTAO);
         btnLoja.setPrefWidth(240);
         btnLoja.setOnAction(e -> {
+            lblStatusMenu.setText("");
             sortearItensLoja();
             atualizarLoja();
             lblMsgLoja.setText("");
             primaryStage.setScene(sceneLoja);
         });
 
-        layout.getChildren().addAll(titulo, btnExplorar, btnLoja);
+        Button btnSalvar = criarBotaoEstilizado("Salvar Progresso", ESTILO_BOTAO);
+        btnSalvar.setPrefWidth(240);
+        btnSalvar.setOnAction(e -> {
+            try {
+                GerenciadorSave.salvarJogo(
+                        heroiAtual.getNome(), heroiAtual.getVida(), heroiAtual.getVidaMax(),
+                        heroiAtual.getAtaque(), heroiAtual.getDefesa(), heroiAtual.getChanceDesvio(),
+                        moedas, qtdCura1, qtdCura2, qtdCura3, qtdCura4,
+                        armaEquipada, armaduraEquipada
+                );
+                lblStatusMenu.setText("Jogo salvo em 'save_rpg.properties'!");
+            } catch (IOException ex) {
+                lblStatusMenu.setText("Falha ao salvar: " + ex.getMessage());
+            }
+        });
+
+        layout.getChildren().addAll(titulo, btnExplorar, btnLoja, btnSalvar, lblStatusMenu);
         sceneMenu = new Scene(layout, 650, 500);
     }
 
@@ -272,7 +281,7 @@ public class Main extends Application {
     }
 
     // ==========================================
-    // 3. MODO COMBATE
+    // 3. MODO COMBATE (Polimorfismo Herói x Inimigo)
     // ==========================================
     private void criarTelaCombate() {
         VBox layout = new VBox(15);
@@ -289,9 +298,9 @@ public class Main extends Application {
         btnBater.setPrefWidth(220);
         btnBater.setOnAction(e -> executarTurnoCombate("bater"));
 
-        btnMagia = criarBotaoEstilizado("Magia", ESTILO_BOTAO);
+        btnMagia = criarBotaoEstilizado("Habilidade Especial", ESTILO_BOTAO);
         btnMagia.setPrefWidth(220);
-        btnMagia.setOnAction(e -> executarTurnoCombate("magia"));
+        btnMagia.setOnAction(e -> executarTurnoCombate("especial"));
 
         btnUsarItens = criarBotaoEstilizado("Usar Itens", ESTILO_BOTAO);
         btnUsarItens.setPrefWidth(220);
@@ -299,16 +308,11 @@ public class Main extends Application {
 
         btnFugir = criarBotaoEstilizado("Fugir", ESTILO_BOTAO);
         btnFugir.setPrefWidth(220);
-        btnFugir.setOnAction(e -> {
-            primaryStage.setScene(sceneMenu);
-        });
+        btnFugir.setOnAction(e -> primaryStage.setScene(sceneMenu));
 
         btnIrParaMenu = criarBotaoEstilizado("Retornar ao Menu Principal", ESTILO_BOTAO_DESTAQUE);
         btnIrParaMenu.setPrefWidth(260);
         btnIrParaMenu.setVisible(false);
-        btnIrParaMenu.setOnAction(e -> {
-            primaryStage.setScene(sceneMenu);
-        });
 
         layout.getChildren().addAll(lblTituloCombate, lblStatusCombate, btnBater, btnMagia, btnUsarItens, btnFugir, btnIrParaMenu);
         sceneCombate = new Scene(layout, 650, 520);
@@ -322,70 +326,29 @@ public class Main extends Application {
         btnIrParaMenu.setVisible(false);
 
         if (itemBatata.isNoInventario() && random.nextInt(5) == 0) {
-            SenhorBatata chefe = new SenhorBatata();
-            tipoInimigoStr = "senhorbatata";
-            nomeInimigo = chefe.getNome();
-            vidaInimigo = chefe.getVida();
-            ataqueInimigo = chefe.getAtaque();
-            defesaInimigo = 15;
-            chanceDesvioInimigo = 0.05;
-            lblStatusCombate.setText("🥔 Chefe Secreto Encontrado: " + nomeInimigo + "!\nHP Herói: " + vidaJogador + " | HP Chefe: " + vidaInimigo);
+            enfrentandoChefe = true;
+            chefeSecretoAtual = new SenhorBatata();
+            lblStatusCombate.setText("Chefe Secreto Encontrado: " + chefeSecretoAtual.getNome() +
+                    "!\nHP " + heroiAtual.getNome() + ": " + heroiAtual.getVida() + " | HP Chefe: " + chefeSecretoAtual.getVida());
             return;
         }
 
-        int sorteio = random.nextInt(4);
+        enfrentandoChefe = false;
+        List<Inimigo> bestiario = new ArrayList<>();
+        bestiario.add(new Aranha());
+        bestiario.add(new Goblin());
+        bestiario.add(new Esqueleto());
+        bestiario.add(new Ciclope());
 
-        switch (sorteio) {
-            case 0:
-                Aranha a = new Aranha();
-                tipoInimigoStr = "aranha";
-                nomeInimigo = a.getNome();
-                vidaInimigo = a.getVida();
-                ataqueInimigo = a.getAtaque();
-                defesaInimigo = a.getDefesa();
-                chanceDesvioInimigo = 0.30;
-                break;
-            case 1:
-                Goblin g = new Goblin();
-                tipoInimigoStr = "goblin";
-                nomeInimigo = g.getNome();
-                vidaInimigo = g.getVida();
-                ataqueInimigo = g.getAtaque();
-                defesaInimigo = g.getDefesa();
-                chanceDesvioInimigo = 0.20;
-                break;
-            case 2:
-                Esqueleto esq = new Esqueleto();
-                tipoInimigoStr = "esqueleto";
-                nomeInimigo = esq.getNome();
-                vidaInimigo = esq.getVida();
-                ataqueInimigo = esq.getAtaque();
-                defesaInimigo = esq.getDefesa();
-                chanceDesvioInimigo = 0.10;
-                break;
-            case 3:
-                Ciclope c = new Ciclope();
-                tipoInimigoStr = "ciclope";
-                nomeInimigo = c.getNome();
-                vidaInimigo = c.getVida();
-                ataqueInimigo = 20;
-                defesaInimigo = c.getDefesa();
-                chanceDesvioInimigo = 0.02;
-                break;
-        }
+        inimigoAtual = bestiario.get(random.nextInt(bestiario.size()));
 
         String avisoStatus = "";
-        if (estaQueimando) avisoStatus += " 🔥 (Queimando!)";
-        if (estaEnvenenado) avisoStatus += " 🧪 (Envenenado!)";
-        if (estaLento) avisoStatus += " ❄️ (Lento!)";
+        if (estaQueimando) avisoStatus += " (Queimando!)";
+        if (estaEnvenenado) avisoStatus += " (Envenenado!)";
+        if (estaLento) avisoStatus += " (Lento!)";
 
-        lblStatusCombate.setText("Um(a) " + nomeInimigo + " apareceu!" + avisoStatus + "\nHP Herói: " + vidaJogador + " | HP Inimigo: " + vidaInimigo);
-    }
-
-    private void resetarStatusEfeitos() {
-        estaQueimando = false;
-        estaEnvenenado = false;
-        estaLento = false;
+        lblStatusCombate.setText("Um(a) " + inimigoAtual.getNome() + " apareceu!" + avisoStatus +
+                "\nHP " + heroiAtual.getNome() + ": " + heroiAtual.getVida() + " | HP Inimigo: " + inimigoAtual.getVida());
     }
 
     private void finalizarCombate(String mensagemFinal, boolean morreu) {
@@ -397,7 +360,6 @@ public class Main extends Application {
         btnIrParaMenu.setVisible(true);
 
         if (morreu) {
-            // Se morreu, muda a ação do botão de retornar para resetar o jogo inteiro e voltar à seleção de herói
             btnIrParaMenu.setText("Voltar à Seleção de Herói");
             btnIrParaMenu.setOnAction(e -> resetarJogoCompleto());
         } else {
@@ -407,86 +369,97 @@ public class Main extends Application {
     }
 
     private void executarTurnoCombate(String tipoAcao) {
-        if (vidaInimigo <= 0 || vidaJogador <= 0) return;
+        int vidaAlvo = enfrentandoChefe ? chefeSecretoAtual.getVida() : inimigoAtual.getVida();
+        if (vidaAlvo <= 0 || heroiAtual.getVida() <= 0) return;
 
         StringBuilder relatorio = new StringBuilder();
+        String nomeAlvo = enfrentandoChefe ? chefeSecretoAtual.getNome() : inimigoAtual.getNome();
+        int defesaAlvo = enfrentandoChefe ? 15 : inimigoAtual.getDefesa();
+        double desvioAlvo = enfrentandoChefe ? 0.05 : inimigoAtual.getChanceDesvio();
 
-        if (random.nextDouble() < chanceDesvioInimigo) {
-            relatorio.append("O(a) ").append(nomeInimigo).append(" desviou do seu ataque!\n");
+        // Turno do Jogador (Polimorfismo no cálculo especial de cada classe)
+        if (random.nextDouble() < desvioAlvo) {
+            relatorio.append("O(a) ").append(nomeAlvo).append(" desviou do seu ataque!\n");
         } else {
-            int danoCausado = 0;
-            if (tipoAcao.equals("bater")) {
-                danoCausado = Math.max(1, ataqueJogador - defesaInimigo);
-            } else if (tipoAcao.equals("magia")) {
-                danoCausado = Math.max(1, (int)(ataqueJogador * 1.5) - defesaInimigo);
+            int ataqueBrutoHeroi = tipoAcao.equals("bater")
+                    ? heroiAtual.getAtaque()
+                    : heroiAtual.calcularDanoEspecial();
+
+            int danoCausado = Math.max(1, ataqueBrutoHeroi - defesaAlvo);
+
+            if (enfrentandoChefe) {
+                chefeSecretoAtual.setVida(chefeSecretoAtual.getVida() - danoCausado);
+                vidaAlvo = chefeSecretoAtual.getVida();
+            } else {
+                inimigoAtual.setVida(inimigoAtual.getVida() - danoCausado);
+                vidaAlvo = inimigoAtual.getVida();
             }
-            vidaInimigo -= danoCausado;
             relatorio.append("Você causou ").append(danoCausado).append(" de dano.\n");
         }
 
-        if (vidaInimigo <= 0) {
+        if (vidaAlvo <= 0) {
             int ganho = 20 + random.nextInt(21);
             moedas += ganho;
-            finalizarCombate("🏆 Vitória! Você derrotou o(a) " + nomeInimigo + "!\nGanhou " + ganho + " moedas.\nClique abaixo para retornar ao Menu.", false);
+            finalizarCombate("Vitória! Você derrotou o(a) " + nomeAlvo + "!\nGanhou " + ganho + " moedas.", false);
             return;
         }
 
+        // Efeitos persistentes
         if (estaQueimando) {
-            vidaJogador -= 15;
-            relatorio.append("🔥 O fogo queimou você em 15 de dano!\n");
+            heroiAtual.receberDano(15);
+            relatorio.append("O fogo queimou você em 15 de dano!\n");
         }
         if (estaEnvenenado) {
             int danoVeneno = 5 + random.nextInt(6);
-            vidaJogador -= danoVeneno;
-            relatorio.append("🧪 O veneno causou ").append(danoVeneno).append(" de dano.\n");
+            heroiAtual.receberDano(danoVeneno);
+            relatorio.append("O veneno causou ").append(danoVeneno).append(" de dano.\n");
         }
 
-        if (vidaJogador <= 0) {
-            finalizarCombate("💀 Game Over! Você foi derrotado...\nClique abaixo para reiniciar o jogo.", true);
+        if (heroiAtual.getVida() <= 0) {
+            finalizarCombate("Game Over! Você foi derrotado...", true);
             return;
         }
 
-        double desvioEfetivo = estaLento ? (chanceDesvioInimigo / 2) : chanceDesvioInimigo;
+        // Turno do Inimigo (Polimórfico)
+        double desvioEfetivo = estaLento ? (heroiAtual.getChanceDesvio() / 2) : heroiAtual.getChanceDesvio();
 
         if (random.nextDouble() < desvioEfetivo) {
-            relatorio.append("Você desviou do ataque do(a) ").append(nomeInimigo).append("!\n");
+            relatorio.append("Você desviou do ataque do(a) ").append(nomeAlvo).append("!\n");
         } else {
-            double fatorVariacao = 0.8 + (random.nextDouble() * 0.4);
-            int ataqueComVariacao = (int) (ataqueInimigo * fatorVariacao);
+            int ataqueBruto = enfrentandoChefe
+                    ? (int) (chefeSecretoAtual.getAtaque() * (0.8 + random.nextDouble() * 0.4))
+                    : inimigoAtual.calcularDanoAtaque();
 
-            int danoRecebido = Math.max(1, ataqueComVariacao - defesaJogador);
-            vidaJogador -= danoRecebido;
-            relatorio.append("O(a) ").append(nomeInimigo).append(" te atingiu causando ").append(danoRecebido).append(" de dano.\n");
+            int danoRecebido = Math.max(1, ataqueBruto - heroiAtual.getDefesa());
+            heroiAtual.receberDano(danoRecebido);
+            relatorio.append("O(a) ").append(nomeAlvo).append(" te atingiu causando ").append(danoRecebido).append(" de dano.\n");
 
-            if (tipoInimigoStr.equals("esqueleto")) {
-                if (random.nextDouble() < 0.40) {
+            if (!enfrentandoChefe) {
+                String efeito = inimigoAtual.acaoEspecial();
+                if (efeito.equals("queimadura")) {
                     estaQueimando = true;
-                    relatorio.append("🔥 Você foi incendiado! (-15 HP/turno)\n");
-                }
-            } else if (tipoInimigoStr.equals("aranha")) {
-                if (random.nextDouble() < 0.50) {
-                    if (random.nextBoolean()) {
-                        estaEnvenenado = true;
-                        relatorio.append("🧪 Você foi envenenado!\n");
-                    } else {
-                        estaLento = true;
-                        relatorio.append("❄️ Você ficou Lento (Desvio reduzido)!\n");
-                    }
+                    relatorio.append("Você foi incendiado! (-15 HP/turno)\n");
+                } else if (efeito.equals("veneno")) {
+                    estaEnvenenado = true;
+                    relatorio.append("Você foi envenenado!\n");
+                } else if (efeito.equals("lento")) {
+                    estaLento = true;
+                    relatorio.append("Você ficou Lento (Desvio reduzido)!\n");
                 }
             }
         }
 
-        if (vidaJogador <= 0) {
-            finalizarCombate("💀 Game Over! Você foi derrotado...\nClique abaixo para reiniciar o jogo.", true);
+        if (heroiAtual.getVida() <= 0) {
+            finalizarCombate("Game Over! Você foi derrotado...", true);
             return;
         }
 
         lblStatusCombate.setText(relatorio.toString() + String.format("\nHP %s: %d | HP %s: %d",
-                nomePersonagem, vidaJogador, nomeInimigo, vidaInimigo));
+                heroiAtual.getNome(), heroiAtual.getVida(), nomeAlvo, vidaAlvo));
     }
 
     // ==========================================
-    // 4. TELA DA LOJA
+    // 4. TELA DA LOJA (Exceções + Interface Equipavel)
     // ==========================================
     private void criarTelaLoja() {
         VBox layout = new VBox(12);
@@ -520,10 +493,7 @@ public class Main extends Application {
         boxItensLoja.getChildren().clear();
 
         List<String> pool = new ArrayList<>();
-        pool.add("cura1");
-        pool.add("cura2");
-        pool.add("cura3");
-        pool.add("cura4");
+        pool.add("cura1"); pool.add("cura2"); pool.add("cura3"); pool.add("cura4");
 
         if (armaArqueiro.isDisponivel()) pool.add("arma1");
         if (armaBarbaro.isDisponivel()) pool.add("arma2");
@@ -545,9 +515,7 @@ public class Main extends Application {
             while (true) {
                 escolhido = pool.get(random.nextInt(pool.size()));
                 if (escolhido.startsWith("cura") || !usadosUnicos.contains(escolhido)) {
-                    if (!escolhido.startsWith("cura")) {
-                        usadosUnicos.add(escolhido);
-                    }
+                    if (!escolhido.startsWith("cura")) usadosUnicos.add(escolhido);
                     break;
                 }
             }
@@ -564,58 +532,141 @@ public class Main extends Application {
         switch (codigo) {
             case "cura1":
                 btn.setText(pocao1.getNome() + " - Preço: " + pocao1.getPreco() + " moedas | " + pocao1.getDescricao());
-                btn.setOnAction(e -> comprarPocao(1, pocao1.getPreco(), pocao1.getNome()));
+                btn.setOnAction(e -> tentarComprarPocao(1, pocao1.getPreco(), pocao1.getNome()));
                 break;
             case "cura2":
                 btn.setText(pocao2.getNome() + " - Preço: " + pocao2.getPreco() + " moedas | " + pocao2.getDescricao());
-                btn.setOnAction(e -> comprarPocao(2, pocao2.getPreco(), pocao2.getNome()));
+                btn.setOnAction(e -> tentarComprarPocao(2, pocao2.getPreco(), pocao2.getNome()));
                 break;
             case "cura3":
                 btn.setText(pocao3.getNome() + " - Preço: " + pocao3.getPreco() + " moedas | " + pocao3.getDescricao());
-                btn.setOnAction(e -> comprarPocao(3, pocao3.getPreco(), pocao3.getNome()));
+                btn.setOnAction(e -> tentarComprarPocao(3, pocao3.getPreco(), pocao3.getNome()));
                 break;
             case "cura4":
                 btn.setText(pocao4.getNome() + " - Preço: " + pocao4.getPreco() + " moedas | " + pocao4.getDescricao());
-                btn.setOnAction(e -> comprarPocao(4, pocao4.getPreco(), pocao4.getNome()));
+                btn.setOnAction(e -> tentarComprarPocao(4, pocao4.getPreco(), pocao4.getNome()));
                 break;
             case "arma1":
-                btn.setText(armaArqueiro.getNome() + " (" + armaArqueiro.getPersonagemCompativel() + ") - Preço: " + armaArqueiro.getPreco() + " moedas | +" + armaArqueiro.getBonusAtaque() + " Ataque");
-                btn.setOnAction(e -> comprarArma(1, btn));
-                break;
+                configurarBotaoArma(btn, armaArqueiro); break;
             case "arma2":
-                btn.setText(armaBarbaro.getNome() + " (" + armaBarbaro.getPersonagemCompativel() + ") - Preço: " + armaBarbaro.getPreco() + " moedas | +" + armaBarbaro.getBonusAtaque() + " Ataque");
-                btn.setOnAction(e -> comprarArma(2, btn));
-                break;
+                configurarBotaoArma(btn, armaBarbaro); break;
             case "arma3":
-                btn.setText(armaLadino.getNome() + " (" + armaLadino.getPersonagemCompativel() + ") - Preço: " + armaLadino.getPreco() + " moedas | +" + armaLadino.getBonusAtaque() + " Ataque");
-                btn.setOnAction(e -> comprarArma(3, btn));
-                break;
+                configurarBotaoArma(btn, armaLadino); break;
             case "arma4":
-                btn.setText(armaMago.getNome() + " (" + armaMago.getPersonagemCompativel() + ") - Preço: " + armaMago.getPreco() + " moedas | +" + armaMago.getBonusAtaque() + " Ataque");
-                btn.setOnAction(e -> comprarArma(4, btn));
-                break;
+                configurarBotaoArma(btn, armaMago); break;
             case "armadura1":
-                btn.setText(armaduraArqueiro.getNome() + " (" + armaduraArqueiro.getPersonagemCompativel() + ") - Preço: " + armaduraArqueiro.getPreco() + " moedas | +" + armaduraArqueiro.getBonusDefesa() + " Defesa");
-                btn.setOnAction(e -> comprarArmadura(1, btn));
-                break;
+                configurarBotaoEquipavel(btn, armaduraArqueiro); break;
             case "armadura2":
-                btn.setText(armaduraBarbaro.getNome() + " (" + armaduraBarbaro.getPersonagemCompativel() + ") - Preço: " + armaduraBarbaro.getPreco() + " moedas | +" + armaduraBarbaro.getBonusDefesa() + " Defesa");
-                btn.setOnAction(e -> comprarArmadura(2, btn));
-                break;
+                configurarBotaoEquipavel(btn, armaduraBarbaro); break;
             case "armadura3":
-                btn.setText(armaduraLadino.getNome() + " (" + armaduraLadino.getPersonagemCompativel() + ") - Preço: " + armaduraLadino.getPreco() + " moedas | +" + armaduraLadino.getBonusDefesa() + " Defesa");
-                btn.setOnAction(e -> comprarArmadura(3, btn));
-                break;
+                configurarBotaoEquipavel(btn, armaduraLadino); break;
             case "armadura4":
-                btn.setText(armaduraMago.getNome() + " (" + armaduraMago.getPersonagemCompativel() + ") - Preço: " + armaduraMago.getPreco() + " moedas | +" + armaduraMago.getBonusDefesa() + " Defesa");
-                btn.setOnAction(e -> comprarArmadura(4, btn));
-                break;
+                configurarBotaoEquipavel(btn, armaduraMago); break;
             case "batata":
                 btn.setText(itemBatata.getNome() + " - Preço: " + itemBatata.getPreco() + " moedas | Cura 1 de vida");
-                btn.setOnAction(e -> comprarBatata(btn));
+                btn.setOnAction(e -> tentarComprarBatata(btn));
                 break;
         }
         return btn;
+    }
+
+    private void configurarBotaoEquipavel(Button btn, Equipavel item) {
+        btn.setText(item.getNome() + " (" + item.getPersonagemCompativel() + ") - Preço: " + item.getPreco() + " moedas | +" + item.getBonus() + " Defesa");
+        btn.setOnAction(e -> {
+            try {
+                validarCompra(item.getPreco(), item.getPersonagemCompativel(), item.getNome());
+                moedas -= item.getPreco();
+                heroiAtual.aumentarDefesa(item.getBonus());
+                armaduraEquipada = item.getNome() + " (+" + item.getBonus() + " DEF)";
+                item.setDisponivel(false);
+                equipamentosAdquiridos.add(item);
+                btn.setDisable(true);
+                lblMsgLoja.setStyle("-fx-text-fill: #2ecc71; -fx-font-weight: bold;");
+                lblMsgLoja.setText("Você equipou " + item.getNome() + "! Defesa atual: " + heroiAtual.getDefesa());
+                atualizarLoja();
+            } catch (SaldoInsuficienteException | ClasseIncompativelException ex) {
+                lblMsgLoja.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+                lblMsgLoja.setText(ex.getMessage());
+            }
+        });
+    }
+
+    private void configurarBotaoArma(Button btn, Object armaObj) {
+        String nome = "", comp = "";
+        int preco = 0, bonus = 0;
+        if (armaObj instanceof Arma1 a) { nome = a.getNome(); comp = a.getPersonagemCompativel(); preco = a.getPreco(); bonus = a.getBonusAtaque(); }
+        else if (armaObj instanceof Arma2 a) { nome = a.getNome(); comp = a.getPersonagemCompativel(); preco = a.getPreco(); bonus = a.getBonusAtaque(); }
+        else if (armaObj instanceof Arma3 a) { nome = a.getNome(); comp = a.getPersonagemCompativel(); preco = a.getPreco(); bonus = a.getBonusAtaque(); }
+        else if (armaObj instanceof Arma4 a) { nome = a.getNome(); comp = a.getPersonagemCompativel(); preco = a.getPreco(); bonus = a.getBonusAtaque(); }
+
+        final String fNome = nome, fComp = comp;
+        final int fPreco = preco, fBonus = bonus;
+
+        btn.setText(fNome + " (" + fComp + ") - Preço: " + fPreco + " moedas | +" + fBonus + " Ataque");
+        btn.setOnAction(e -> {
+            try {
+                validarCompra(fPreco, fComp, fNome);
+                moedas -= fPreco;
+                heroiAtual.aumentarAtaque(fBonus);
+                armaEquipada = fNome + " (+" + fBonus + " ATQ)";
+                if (armaObj instanceof Arma1 a) a.setDisponivel(false);
+                else if (armaObj instanceof Arma2 a) a.setDisponivel(false);
+                else if (armaObj instanceof Arma3 a) a.setDisponivel(false);
+                else if (armaObj instanceof Arma4 a) a.setDisponivel(false);
+                btn.setDisable(true);
+                lblMsgLoja.setStyle("-fx-text-fill: #2ecc71; -fx-font-weight: bold;");
+                lblMsgLoja.setText("Você equipou " + fNome + "! Ataque atual: " + heroiAtual.getAtaque());
+                atualizarLoja();
+            } catch (SaldoInsuficienteException | ClasseIncompativelException ex) {
+                lblMsgLoja.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+                lblMsgLoja.setText(ex.getMessage());
+            }
+        });
+    }
+
+    private void validarCompra(int preco, String classeCompativel, String nomeItem)
+            throws SaldoInsuficienteException, ClasseIncompativelException {
+        if (classeCompativel != null && !heroiAtual.getNome().equalsIgnoreCase(classeCompativel)) {
+            throw new ClasseIncompativelException("Apenas " + classeCompativel + " pode equipar " + nomeItem + "!");
+        }
+        if (moedas < preco) {
+            throw new SaldoInsuficienteException("Moedas insuficientes para comprar " + nomeItem + "!");
+        }
+    }
+
+    private void tentarComprarPocao(int tipo, int preco, String nome) {
+        try {
+            validarCompra(preco, null, nome);
+            moedas -= preco;
+            switch (tipo) {
+                case 1: qtdCura1++; break;
+                case 2: qtdCura2++; break;
+                case 3: qtdCura3++; break;
+                case 4: qtdCura4++; break;
+            }
+            lblMsgLoja.setStyle("-fx-text-fill: #2ecc71; -fx-font-weight: bold;");
+            lblMsgLoja.setText("Compra realizada: " + nome + "!");
+            atualizarLoja();
+        } catch (SaldoInsuficienteException | ClasseIncompativelException ex) {
+            lblMsgLoja.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+            lblMsgLoja.setText(ex.getMessage());
+        }
+    }
+
+    private void tentarComprarBatata(Button btnOrigem) {
+        try {
+            validarCompra(itemBatata.getPreco(), null, itemBatata.getNome());
+            if (itemBatata.comprar()) {
+                moedas -= itemBatata.getPreco();
+                btnOrigem.setDisable(true);
+                lblMsgLoja.setStyle("-fx-text-fill: #2ecc71; -fx-font-weight: bold;");
+                lblMsgLoja.setText("Você comprou: " + itemBatata.getNome() + "!");
+                atualizarLoja();
+            }
+        } catch (SaldoInsuficienteException | ClasseIncompativelException ex) {
+            lblMsgLoja.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+            lblMsgLoja.setText(ex.getMessage());
+        }
     }
 
     private Button criarBotaoEstilizado(String texto, String estiloBase) {
@@ -626,139 +677,13 @@ public class Main extends Application {
         return btn;
     }
 
-    private void comprarPocao(int tipo, int preco, String nome) {
-        if (moedas < preco) {
-            lblMsgLoja.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
-            lblMsgLoja.setText("Moedas insuficientes para comprar " + nome + "!");
-            return;
-        }
-        moedas -= preco;
-        switch (tipo) {
-            case 1: qtdCura1++; break;
-            case 2: qtdCura2++; break;
-            case 3: qtdCura3++; break;
-            case 4: qtdCura4++; break;
-        }
-        lblMsgLoja.setStyle("-fx-text-fill: #2ecc71; -fx-font-weight: bold;");
-        lblMsgLoja.setText("Compra realizada: " + nome + "!");
-        atualizarLoja();
-    }
-
-    private void comprarArma(int tipo, Button btnOrigem) {
-        String nomeArma = "", compativel = "";
-        int preco = 0, bonus = 0;
-        boolean disponivel = false;
-
-        switch (tipo) {
-            case 1: nomeArma = armaArqueiro.getNome(); compativel = armaArqueiro.getPersonagemCompativel(); preco = armaArqueiro.getPreco(); bonus = armaArqueiro.getBonusAtaque(); disponivel = armaArqueiro.isDisponivel(); break;
-            case 2: nomeArma = armaBarbaro.getNome(); compativel = armaBarbaro.getPersonagemCompativel(); preco = armaBarbaro.getPreco(); bonus = armaBarbaro.getBonusAtaque(); disponivel = armaBarbaro.isDisponivel(); break;
-            case 3: nomeArma = armaLadino.getNome(); compativel = armaLadino.getPersonagemCompativel(); preco = armaLadino.getPreco(); bonus = armaLadino.getBonusAtaque(); disponivel = armaLadino.isDisponivel(); break;
-            case 4: nomeArma = armaMago.getNome(); compativel = armaMago.getPersonagemCompativel(); preco = armaMago.getPreco(); bonus = armaMago.getBonusAtaque(); disponivel = armaMago.isDisponivel(); break;
-        }
-
-        if (!disponivel) {
-            lblMsgLoja.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
-            lblMsgLoja.setText("Esta arma já foi comprada!");
-            return;
-        }
-        if (!nomePersonagem.equalsIgnoreCase(compativel)) {
-            lblMsgLoja.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
-            lblMsgLoja.setText("Apenas " + compativel + " pode equipar " + nomeArma + "!");
-            return;
-        }
-        if (moedas < preco) {
-            lblMsgLoja.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
-            lblMsgLoja.setText("Moedas insuficientes para comprar " + nomeArma + "!");
-            return;
-        }
-
-        moedas -= preco;
-        ataqueJogador += bonus;
-        armaEquipada = nomeArma + " (+" + bonus + " ATQ)";
-        btnOrigem.setDisable(true);
-
-        switch (tipo) {
-            case 1: armaArqueiro.setDisponivel(false); break;
-            case 2: armaBarbaro.setDisponivel(false); break;
-            case 3: armaLadino.setDisponivel(false); break;
-            case 4: armaMago.setDisponivel(false); break;
-        }
-
-        lblMsgLoja.setStyle("-fx-text-fill: #2ecc71; -fx-font-weight: bold;");
-        lblMsgLoja.setText("Você equipou " + nomeArma + "! Ataque atual: " + ataqueJogador);
-        atualizarLoja();
-    }
-
-    private void comprarArmadura(int tipo, Button btnOrigem) {
-        String nomeArmadura = "", compativel = "";
-        int preco = 0, bonus = 0;
-        boolean disponivel = false;
-
-        switch (tipo) {
-            case 1: nomeArmadura = armaduraArqueiro.getNome(); compativel = armaduraArqueiro.getPersonagemCompativel(); preco = armaduraArqueiro.getPreco(); bonus = armaduraArqueiro.getBonusDefesa(); disponivel = armaduraArqueiro.isDisponivel(); break;
-            case 2: nomeArmadura = armaduraBarbaro.getNome(); compativel = armaduraBarbaro.getPersonagemCompativel(); preco = armaduraBarbaro.getPreco(); bonus = armaduraBarbaro.getBonusDefesa(); disponivel = armaduraBarbaro.isDisponivel(); break;
-            case 3: nomeArmadura = armaduraLadino.getNome(); compativel = armaduraLadino.getPersonagemCompativel(); preco = armaduraLadino.getPreco(); bonus = armaduraLadino.getBonusDefesa(); disponivel = armaduraLadino.isDisponivel(); break;
-            case 4: nomeArmadura = armaduraMago.getNome(); compativel = armaduraMago.getPersonagemCompativel(); preco = armaduraMago.getPreco(); bonus = armaduraMago.getBonusDefesa(); disponivel = armaduraMago.isDisponivel(); break;
-        }
-
-        if (!disponivel) {
-            lblMsgLoja.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
-            lblMsgLoja.setText("Esta armadura já foi comprada!");
-            return;
-        }
-        if (!nomePersonagem.equalsIgnoreCase(compativel)) {
-            lblMsgLoja.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
-            lblMsgLoja.setText("Apenas " + compativel + " pode equipar " + nomeArmadura + "!");
-            return;
-        }
-        if (moedas < preco) {
-            lblMsgLoja.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
-            lblMsgLoja.setText("Moedas insuficientes para comprar " + nomeArmadura + "!");
-            return;
-        }
-
-        moedas -= preco;
-        defesaJogador += bonus;
-        armaduraEquipada = nomeArmadura + " (+" + bonus + " DEF)";
-        btnOrigem.setDisable(true);
-
-        switch (tipo) {
-            case 1: armaduraArqueiro.setDisponivel(false); break;
-            case 2: armaduraBarbaro.setDisponivel(false); break;
-            case 3: armaduraLadino.setDisponivel(false); break;
-            case 4: armaduraMago.setDisponivel(false); break;
-        }
-
-        lblMsgLoja.setStyle("-fx-text-fill: #2ecc71; -fx-font-weight: bold;");
-        lblMsgLoja.setText("Você equipou " + nomeArmadura + "! Defesa atual: " + defesaJogador);
-        atualizarLoja();
-    }
-
-    private void comprarBatata(Button btnOrigem) {
-        if (!itemBatata.isDisponivel()) {
-            lblMsgLoja.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
-            lblMsgLoja.setText("Este item não está mais disponível!");
-            return;
-        }
-        if (moedas < itemBatata.getPreco()) {
-            lblMsgLoja.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
-            lblMsgLoja.setText("Moedas insuficientes!");
-            return;
-        }
-        if (itemBatata.comprar()) {
-            moedas -= itemBatata.getPreco();
-            btnOrigem.setDisable(true);
-            lblMsgLoja.setStyle("-fx-text-fill: #2ecc71; -fx-font-weight: bold;");
-            lblMsgLoja.setText("Você comprou: " + itemBatata.getNome() + "!");
-            atualizarLoja();
-        }
-    }
-
     private void atualizarLoja() {
-        lblMoedasLoja.setText("Suas Moedas: " + moedas + " | Herói: " + nomePersonagem + " (ATQ: " + ataqueJogador + " | DEF: " + defesaJogador + ")");
+        lblMoedasLoja.setText("Suas Moedas: " + moedas + " | Herói: " + heroiAtual.getNome() +
+                " (ATQ: " + heroiAtual.getAtaque() + " | DEF: " + heroiAtual.getDefesa() + ")");
         String statusBatataStr = itemBatata.isNoInventario() ? "1 (No Inventário)" : "0";
         lblInventarioLoja.setText(String.format(
-                "=== SEU INVENTÁRIO ===\n• %s: %d  |  • %s: %d\n• %s: %d  |  • %s: %d\n• Arma: %s\n• Armadura: %s\n• Batata: %s",
+                "=== SEU INVENTÁRIO (%d equipamentos) ===\n• %s: %d  |  • %s: %d\n• %s: %d  |  • %s: %d\n• Arma: %s\n• Armadura: %s\n• Batata: %s",
+                equipamentosAdquiridos.size(),
                 pocao1.getNome(), qtdCura1, pocao2.getNome(), qtdCura2,
                 pocao3.getNome(), qtdCura3, pocao4.getNome(), qtdCura4,
                 armaEquipada, armaduraEquipada, statusBatataStr));
@@ -794,20 +719,22 @@ public class Main extends Application {
         boolean limpaStatus = false;
 
         if (tipo >= 1 && tipo <= 4) {
+            int novaVida = heroiAtual.getVida();
             switch (tipo) {
                 case 1:
-                    vidaJogador = pocao1.curar(vidaJogador, vidaMaxJogador);
+                    novaVida = pocao1.curar(heroiAtual.getVida(), heroiAtual.getVidaMax());
                     qtdCura1--; nomeItem = pocao1.getNome(); limpaStatus = pocao1.isRemoveStatus(); break;
                 case 2:
-                    vidaJogador = pocao2.curar(vidaJogador, vidaMaxJogador);
+                    novaVida = pocao2.curar(heroiAtual.getVida(), heroiAtual.getVidaMax());
                     qtdCura2--; nomeItem = pocao2.getNome(); limpaStatus = pocao2.isRemoveStatus(); break;
                 case 3:
-                    vidaJogador = pocao3.curar(vidaJogador, vidaMaxJogador);
+                    novaVida = pocao3.curar(heroiAtual.getVida(), heroiAtual.getVidaMax());
                     qtdCura3--; nomeItem = pocao3.getNome(); limpaStatus = pocao3.isRemoveStatus(); break;
                 case 4:
-                    vidaJogador = pocao4.curar(vidaJogador, vidaMaxJogador);
+                    novaVida = pocao4.curar(heroiAtual.getVida(), heroiAtual.getVidaMax());
                     qtdCura4--; nomeItem = pocao4.getNome(); limpaStatus = pocao4.isRemoveStatus(); break;
             }
+            heroiAtual.setVida(novaVida);
             if (limpaStatus) {
                 estaQueimando = false;
                 estaEnvenenado = false;
@@ -815,12 +742,15 @@ public class Main extends Application {
             }
         } else if (tipo == 5) {
             int curaBatata = itemBatata.usar();
-            vidaJogador = Math.min(vidaMaxJogador, vidaJogador + curaBatata);
+            heroiAtual.curar(curaBatata);
             nomeItem = itemBatata.getNome();
         }
 
+        String nomeAlvo = enfrentandoChefe ? chefeSecretoAtual.getNome() : inimigoAtual.getNome();
+        int vidaAlvo = enfrentandoChefe ? chefeSecretoAtual.getVida() : inimigoAtual.getVida();
+
         lblStatusCombate.setText("Você usou " + nomeItem + "!" + (limpaStatus ? " Status limpos." : "") +
-                "\nHP " + nomePersonagem + ": " + vidaJogador + " | HP " + nomeInimigo + ": " + vidaInimigo);
+                "\nHP " + heroiAtual.getNome() + ": " + heroiAtual.getVida() + " | HP " + nomeAlvo + ": " + vidaAlvo);
     }
 
     public static void main(String[] args) {

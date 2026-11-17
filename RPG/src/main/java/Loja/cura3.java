@@ -1,34 +1,17 @@
 package Loja;
 
 public class cura3 {
-    private String nome;
-    private int preco;
-    private int cura;
-    private boolean removeStatus; // remove queimadura e veneno
-    private String descricao;
+    private String nome = "Antídoto Purificador";
+    private int preco = 15;
+    private String descricao = "Recupera 15 HP e limpa veneno/fogo/lentidão";
+    private boolean removeStatus = true;
 
-    public cura3() {
-        this.nome = "Poção de Cura Grande";
-        this.preco = 70;
-        this.cura = 100;
-        this.removeStatus = true;
-        this.descricao = "Restaura 100 HP e remove queimadura e veneno.";
+    public int curar(int vidaAtual, int vidaMax) {
+        return Math.min(vidaMax, vidaAtual + 15);
     }
 
-    // Retorna a nova vida do jogador após usar a poção (nunca passa da vida máxima)
-    public int curar(int vidaAtual, int vidaMaxima) {
-        return Math.min(vidaMaxima, vidaAtual + cura);
-    }
-
-    // Getters
     public String getNome() { return nome; }
     public int getPreco() { return preco; }
-    public int getCura() { return cura; }
-    public boolean isRemoveStatus() { return removeStatus; }
     public String getDescricao() { return descricao; }
-
-    @Override
-    public String toString() {
-        return nome + " - Cura: " + cura + " HP | Preço: " + preco + " moedas";
-    }
+    public boolean isRemoveStatus() { return removeStatus; }
 }
